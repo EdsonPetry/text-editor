@@ -57,6 +57,27 @@ bool startsWith(const std::string& str, const std::string& prefix) {
     return str.rfind(prefix, 0) == 0;
 }
 
+void saveFile(const std::string& filename, const std::vector<std::string>& lines) {
+    std::ofstream file(filename, std::ios::out | std::ios::trunc);  // overwrite file
+
+    if (!file) {
+        std::cerr << "Could not open file for writing.\n";
+        return;
+    }
+
+    for (const auto& line : lines) {
+        file << line << '\n';  // write each line and end with newline
+    }
+}
+
+
+std::string getAfterPrefix(const std::string& str, const std::string& prefix) {
+    if (str.rfind(prefix + " ", 0) == 0) {
+        return str.substr(prefix.size() + 1); // +1 for the space
+    }
+    return "";
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 2){
     std::cout << "usage" << argv[0] << "{File}";
@@ -75,7 +96,7 @@ int main(int argc, char* argv[]) {
       createFile.close();
   } 
   // open up the files again
-  std::fstream EditFile(filename, std::ios::in | std::ios::out | std::ios::app);
+  std::fstream EditFile(filename, std::ios::in | std::ios::out | std::ios:: app);
   if (!EditFile) {
       std::cerr << "Failed to open file.\n";
       return -1;
@@ -87,33 +108,54 @@ int main(int argc, char* argv[]) {
   std::string input;
   std::cout << "Enter something (type 'exit' to quit):\n";
   uint cursor = 0;
+  std::string state = "normal"; // normal , edit
   // This loop will keep running until the user types "exit"
   while (true) {
     DisplayText(lines,cursor);
-    std::cout << "> ";
+    std::cout << state << " mode"  <<"> ";
     std::getline(std::cin, input);  // reads a full line including spaces
 
-    if (input == "exit") {
-        break;
-    }else if (input == "j")
-    {
-      cursor++;
-    }
-    else if (input == "k"){
-      cursor--;
-    }else if(input == "H"){ // Top of file
-      cursor = 0;
-    }else if(input == "M"){ // Middle of file
-      cursor = lines.size() / 2;
-    }else if(input == "L"){ // Bottom of file
-      cursor = lines.size()-1;
-    }
-    else if(startsWith(input,"e ")){
-     std::cout << "Going into edit mode (Gotta implement This)\n" ; 
-    }
-    else{
-    std::cout << "You entered: " << input << "\n";
+    if (state == "normal"){
+      if(startsWith(input,"e-")){
+        state = "edit";
+      }
+      if (input == "q") {
+        std::cout << "\n exiting program succsefully \n";
+        return 0;
+      }
+      else if (input == "w"){
+        saveFile(filename,lines);
+      }else if (input == "j")
+      {
+        cursor++;
+      }
+      else if (input == "k"){
+        cursor--;
+      }else if(input == "H"){ // Top of file
+        cursor = 0;
+      }else if(input == "M"){ // Middle of file
+        cursor = lines.size() / 2;
+      }else if(input == "L"){ // Bottom of file
+        cursor = lines.size()-1;
+      }
 
+    }else if (state == "edit"){
+      if(startsWith(input,"n-")){
+        state = "normal";
+        continue;
+      }
+      if (cursor < lines.size()) {
+        lines[cursor] = input;
+      } else {
+      // If we're editing beyond current size, pad missing lines with empty strings
+        while (lines.size() < cursor) {
+          lines.push_back(""); // blank lines
+          }
+        lines.push_back(input); // actual new line
+        }
+
+
+      
     }
 
   }
